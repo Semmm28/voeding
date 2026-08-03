@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'voeding-pwa-';
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE = `${CACHE_PREFIX}static-${CACHE_VERSION}`;
 
 const APP_SHELL = [
@@ -12,6 +12,7 @@ const APP_SHELL = [
   './assets/icon-512.png',
   './assets/apple-touch-icon.png',
   './src/app.js',
+  './src/pwa-update.js',
   './src/ui/render.js',
   './src/data/ingredients.js',
   './src/data/recipes.js',

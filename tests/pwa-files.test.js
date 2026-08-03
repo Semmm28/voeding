@@ -30,6 +30,14 @@ test('HTML laadt de module, het manifest en lokale styles', async () => {
   assert.match(html, /<html lang="nl">/);
   assert.match(html, /rel="manifest" href="\.\/manifest\.webmanifest"/);
   assert.match(html, /src="\.\/src\/app\.js"/);
+  assert.match(html, /id="reload-app"/);
+  assert.match(html, /src="\.\/src\/pwa-update\.js"/);
   assert.match(html, /href="\.\/assets\/styles\.css"/);
   assert.doesNotMatch(html, /<script[^>]+src="https?:\/\//i);
+});
+
+test('bedieningsknoppen voorkomen dubbel-tik-zoom zonder pinch-zoom uit te schakelen', async () => {
+  const styles = await readFile(path.join(projectRoot, 'assets/styles.css'), 'utf8');
+  assert.match(styles, /button,\s*a\s*{\s*touch-action:\s*manipulation;/);
+  assert.doesNotMatch(styles, /touch-action:\s*none/);
 });

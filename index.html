@@ -272,6 +272,17 @@
             </div>
           </form>
 
+          <section class="settings-card data-card" aria-labelledby="app-update-heading">
+            <div>
+              <h2 id="app-update-heading">Appversie</h2>
+              <p>Controleer op een nieuwe versie en laad de app opnieuw. Je instellingen, schema en boodschappen blijven bewaard.</p>
+              <p id="app-update-status" class="app-update-status" role="status" aria-live="polite"></p>
+            </div>
+            <div class="data-actions">
+              <button id="reload-app" class="button button-secondary" type="button">App herladen</button>
+            </div>
+          </section>
+
           <section class="settings-card data-card" aria-labelledby="backup-heading">
             <div>
               <h2 id="backup-heading">Back-up en herstel</h2>
@@ -329,5 +340,6 @@
 
     <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
     <script type="module" src="./src/app.js"></script>
+    <script type="module" src="./src/pwa-update.js"></script>
   </body>
 </html>
