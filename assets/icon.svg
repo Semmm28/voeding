@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Voeding-appicoon</title>
+  <desc id="description">Een witte kom met een groen blad op een donkergroene achtergrond.</desc>
+  <rect width="512" height="512" rx="112" fill="#143d32"/>
+  <path d="M102 236h308c-7 105-64 174-154 174S109 341 102 236Z" fill="#f7fbf8"/>
+  <path d="M148 430h216" fill="none" stroke="#f7fbf8" stroke-linecap="round" stroke-width="28"/>
+  <path d="M264 219c8-71 49-116 126-136-6 73-49 120-126 136Z" fill="#8bd4a8"/>
+  <path d="M260 222c-10-60-47-99-112-117 5 62 43 103 112 117Z" fill="#d7f0df"/>
+  <path d="M256 225v-62" fill="none" stroke="#f7fbf8" stroke-linecap="round" stroke-width="20"/>
+</svg>
+

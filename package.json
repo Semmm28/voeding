@@ -1,0 +1,16 @@
+{
+  "name": "voeding-pwa",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Lokale, offline-first voedingsplanner zonder AI of backend.",
+  "scripts": {
+    "test": "node --test",
+    "validate": "node ./scripts/validate-data.mjs",
+    "check": "npm run validate && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
+
