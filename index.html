@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f7f8f3" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#111612" media="(prefers-color-scheme: dark)">
+    <meta name="description" content="Maak lokaal een persoonlijk voedingsschema en boodschappenlijst, ook zonder internet.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Voeding">
+    <title>Voeding — maaltijdplanner</title>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+    <link rel="stylesheet" href="./assets/styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Ga naar de inhoud</a>
+
+    <div class="app-shell">
+      <header class="app-header">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">V</span>
+          <div>
+            <p class="eyebrow">Jouw lokale maaltijdplanner</p>
+            <p class="brand-name">Voeding</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <p id="online-status" class="connection-status" role="status" aria-live="polite">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span data-status-label>Online</span>
+          </p>
+          <button id="install-button" class="button button-secondary button-compact" type="button" hidden>
+            Installeer app
+          </button>
+        </div>
+      </header>
+
+      <main id="main-content" class="main-content" tabindex="-1">
+        <section id="planner-view" class="view" data-view-panel="planner" aria-labelledby="planner-heading">
+          <div class="view-heading">
+            <div>
+              <p class="eyebrow">Weekoverzicht</p>
+              <h1 id="planner-heading">Mijn voedingsschema</h1>
+              <p class="view-intro">Genereer een haalbaar schema uit de lokale receptendatabase en pas maaltijden direct aan.</p>
+            </div>
+            <div class="heading-actions">
+              <button id="generate-plan" class="button button-primary" type="button" data-action="generate-plan">
+                Genereer schema
+              </button>
+              <button id="regenerate-plan" class="button button-secondary" type="button" data-action="regenerate-plan" hidden>
+                Genereer opnieuw
+              </button>
+            </div>
+          </div>
+
+          <div id="plan-status" class="status-panel status-info" role="status" aria-live="polite" aria-atomic="true">
+            <span class="status-icon" aria-hidden="true">i</span>
+            <div>
+              <strong>Nog geen schema</strong>
+              <p>Controleer eerst je doelen bij Instellingen en genereer daarna je schema.</p>
+            </div>
+          </div>
+
+          <div id="plan-warnings" class="message-stack" aria-live="polite"></div>
+
+          <div id="plan-results" class="plan-results">
+            <div class="empty-state">
+              <span class="empty-icon" aria-hidden="true">☷</span>
+              <h2>Je schema verschijnt hier</h2>
+              <p>De planner gebruikt alleen recepten die bij je dieet, allergenen, tijd en budget passen.</p>
+              <a class="button button-secondary" href="#settings-view" data-view="settings">Naar instellingen</a>
+            </div>
+          </div>
+
+          <aside class="notice-card" aria-label="Uitleg voedingswaarden">
+            <strong>Goed om te weten</strong>
+            <p>Voedingswaarden zijn berekeningen op basis van de opgeslagen ingrediëntgegevens. Productetiketten en werkelijke porties kunnen afwijken.</p>
+          </aside>
+        </section>
+
+        <section id="recipes-view" class="view" data-view-panel="recipes" aria-labelledby="recipes-heading" hidden>
+          <div class="view-heading">
+            <div>
+              <p class="eyebrow">Lokale database</p>
+              <h1 id="recipes-heading">Recepten</h1>
+              <p class="view-intro">Zoek en filter recepten. Alles blijft beschikbaar wanneer je offline bent.</p>
+            </div>
+          </div>
+
+          <form id="recipe-filter-form" class="filter-panel" role="search">
+            <div class="field field-wide">
+              <label for="recipe-search">Zoek recept of ingrediënt</label>
+              <input id="recipe-search" name="query" type="search" inputmode="search" autocomplete="off" placeholder="Bijvoorbeeld tofu, curry of ontbijt">
+            </div>
+            <div class="field">
+              <label for="recipe-meal-filter">Eetmoment</label>
+              <select id="recipe-meal-filter" name="mealType">
+                <option value="all">Alle eetmomenten</option>
+                <option value="breakfast">Ontbijt</option>
+                <option value="lunch">Lunch</option>
+                <option value="dinner">Avondeten</option>
+                <option value="snack">Snack</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="recipe-diet-filter">Dieet</label>
+              <select id="recipe-diet-filter" name="diet">
+                <option value="all">Alles</option>
+                <option value="vegetarian">Vegetarisch</option>
+                <option value="vegan">Veganistisch</option>
+                <option value="lactoseFree">Lactosevrij</option>
+              </select>
+            </div>
+            <div class="filter-actions">
+              <button class="button button-primary" type="submit">Zoeken</button>
+              <button class="button button-quiet filter-reset" type="reset" data-action="reset-recipe-filters">Wis filters</button>
+            </div>
+          </form>
+
+          <div class="results-bar">
+            <p id="recipe-results-count" role="status" aria-live="polite">Recepten laden…</p>
+          </div>
+          <div id="recipe-results" class="recipe-grid" aria-busy="true"></div>
+        </section>
+
+        <section id="shopping-view" class="view" data-view-panel="shopping" aria-labelledby="shopping-heading" hidden>
+          <div class="view-heading">
+            <div>
+              <p class="eyebrow">Automatisch gebundeld</p>
+              <h1 id="shopping-heading">Boodschappenlijst</h1>
+              <p class="view-intro">Ingrediënten uit je huidige schema worden per categorie samengevoegd.</p>
+            </div>
+            <button id="clear-checked-shopping" class="button button-secondary" type="button" data-action="clear-checked-shopping">
+              Verwijder afgevinkt
+            </button>
+          </div>
+
+          <div id="shopping-progress" class="progress-summary" role="status" aria-live="polite">
+            <div>
+              <strong>Nog geen boodschappen</strong>
+              <span>Genereer eerst een schema.</span>
+            </div>
+          </div>
+          <div id="shopping-list" class="shopping-list">
+            <div class="empty-state empty-state-compact">
+              <span class="empty-icon" aria-hidden="true">✓</span>
+              <h2>Je lijst is leeg</h2>
+              <p>Na het genereren van een schema vind je hier alle benodigde ingrediënten.</p>
+            </div>
+          </div>
+        </section>
+
+        <section id="settings-view" class="view" data-view-panel="settings" aria-labelledby="settings-heading" hidden>
+          <div class="view-heading">
+            <div>
+              <p class="eyebrow">Persoonlijke voorkeuren</p>
+              <h1 id="settings-heading">Instellingen</h1>
+              <p class="view-intro">Stel streefwaarden en grenzen in. De planner meldt het als een combinatie niet haalbaar is.</p>
+            </div>
+          </div>
+
+          <form id="settings-form" class="settings-form">
+            <fieldset class="settings-card">
+              <legend>Dagelijkse doelen</legend>
+              <p class="fieldset-help">Gebruik waarden die bij jou passen. Dit is een planner en geen medisch advies.</p>
+              <div class="form-grid form-grid-four">
+                <div class="field">
+                  <label for="target-kcal">Energie <span aria-hidden="true">(kcal)</span></label>
+                  <input id="target-kcal" name="targetKcal" type="number" inputmode="numeric" min="800" max="6000" step="10" value="2200" required aria-describedby="target-kcal-help">
+                  <small id="target-kcal-help">800–6000 kcal</small>
+                </div>
+                <div class="field">
+                  <label for="target-protein">Eiwit <span aria-hidden="true">(g)</span></label>
+                  <input id="target-protein" name="targetProtein" type="number" inputmode="decimal" min="0" max="400" step="1" value="150" required>
+                </div>
+                <div class="field">
+                  <label for="target-carbs">Koolhydraten <span aria-hidden="true">(g)</span></label>
+                  <input id="target-carbs" name="targetCarbs" type="number" inputmode="decimal" min="0" max="800" step="1" value="250" required>
+                </div>
+                <div class="field">
+                  <label for="target-fat">Vet <span aria-hidden="true">(g)</span></label>
+                  <input id="target-fat" name="targetFat" type="number" inputmode="decimal" min="0" max="300" step="1" value="70" required>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="settings-card">
+              <legend>Schema</legend>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="plan-days">Aantal dagen</label>
+                  <select id="plan-days" name="days" required>
+                    <option value="1">1 dag</option>
+                    <option value="2">2 dagen</option>
+                    <option value="3">3 dagen</option>
+                    <option value="4">4 dagen</option>
+                    <option value="5">5 dagen</option>
+                    <option value="6">6 dagen</option>
+                    <option value="7" selected>7 dagen</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="meals-per-day">Eetmomenten per dag</label>
+                  <select id="meals-per-day" name="mealsPerDay" required>
+                    <option value="3">3 eetmomenten</option>
+                    <option value="4" selected>4 eetmomenten</option>
+                    <option value="5">5 eetmomenten</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="diet">Dieet</label>
+                  <select id="diet" name="diet" required>
+                    <option value="all" selected>Alles</option>
+                    <option value="vegetarian">Vegetarisch</option>
+                    <option value="vegan">Veganistisch</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="max-prep-time">Maximale bereidingstijd</label>
+                  <div class="input-suffix">
+                    <input id="max-prep-time" name="maxPrepMinutes" type="number" inputmode="numeric" min="5" max="180" step="5" value="45">
+                    <span>min</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="daily-budget">Maximaal dagbudget</label>
+                  <div class="input-prefix">
+                    <span>€</span>
+                    <input id="daily-budget" name="dailyBudget" type="number" inputmode="decimal" min="0" max="250" step="0.50" placeholder="Geen limiet">
+                  </div>
+                  <small>Gebaseerd op indicatieve opgeslagen prijzen, niet op actuele winkelprijzen.</small>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="settings-card">
+              <legend>Allergenen uitsluiten</legend>
+              <p class="fieldset-help">De app filtert recepten op de opgeslagen allergeenlabels. Controleer bij een allergie altijd zelf productetiketten en kruisbesmettingswaarschuwingen.</p>
+              <div class="choice-grid">
+                <label class="check-card"><input type="checkbox" name="allergens" value="gluten"><span>Gluten</span></label>
+                <label class="check-card"><input type="checkbox" name="allergens" value="melk"><span>Melk</span></label>
+                <label class="check-card"><input type="checkbox" name="allergens" value="ei"><span>Ei</span></label>
+                <label class="check-card"><input type="checkbox" name="allergens" value="soja"><span>Soja</span></label>
+                <label class="check-card"><input type="checkbox" name="allergens" value="pinda"><span>Pinda</span></label>
+                <label class="check-card"><input type="checkbox" name="allergens" value="noten"><span>Noten</span></label>
+                <label class="check-card"><input type="checkbox" name="allergens" value="vis"><span>Vis</span></label>
+                <label class="check-card"><input type="checkbox" name="allergens" value="schaaldieren"><span>Schaaldieren</span></label>
+                <label class="check-card"><input type="checkbox" name="allergens" value="weekdieren"><span>Weekdieren</span></label>
+                <label class="check-card"><input type="checkbox" name="allergens" value="sesam"><span>Sesam</span></label>
+                <label class="check-card"><input type="checkbox" name="allergens" value="mosterd"><span>Mosterd</span></label>
+                <label class="check-card"><input type="checkbox" name="allergens" value="selderij"><span>Selderij</span></label>
+              </div>
+            </fieldset>
+
+            <fieldset class="settings-card">
+              <legend>Ingrediënten uitsluiten</legend>
+              <div class="field">
+                <label for="excluded-ingredients">Niet gebruiken</label>
+                <textarea id="excluded-ingredients" name="excludedIngredients" rows="3" placeholder="Bijvoorbeeld: avocado, champignons, tonijn" aria-describedby="excluded-help"></textarea>
+                <small id="excluded-help">Scheid meerdere ingrediënten met een komma. Hoofdletters maken niet uit.</small>
+              </div>
+            </fieldset>
+
+            <div id="settings-errors" class="form-errors" role="alert" aria-live="assertive" hidden></div>
+            <div class="sticky-form-actions">
+              <p id="settings-save-status" role="status" aria-live="polite"></p>
+              <button class="button button-primary" type="submit" data-action="save-settings">Instellingen opslaan</button>
+            </div>
+          </form>
+
+          <section class="settings-card data-card" aria-labelledby="backup-heading">
+            <div>
+              <h2 id="backup-heading">Back-up en herstel</h2>
+              <p>Exporteer je instellingen, schema’s en afgevinkte boodschappen als JSON-bestand.</p>
+            </div>
+            <div class="data-actions">
+              <button id="export-backup" class="button button-secondary" type="button" data-action="export-backup">Exporteer back-up</button>
+              <label class="button button-secondary file-button" for="import-backup">Importeer back-up</label>
+              <input id="import-backup" class="visually-hidden" name="backupFile" type="file" accept="application/json,.json" data-action="import-backup">
+            </div>
+          </section>
+
+          <section class="danger-zone" aria-labelledby="reset-heading">
+            <div>
+              <h2 id="reset-heading">Lokale gegevens wissen</h2>
+              <p>Dit verwijdert je instellingen, schema en boodschappen van dit apparaat. Exporteer eerst een back-up als je ze wilt bewaren.</p>
+            </div>
+            <button id="reset-data" class="button button-danger" type="button" data-action="reset-data">Wis alle gegevens</button>
+          </section>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="Hoofdnavigatie">
+        <button class="nav-item is-active" type="button" data-view="planner" aria-controls="planner-view" aria-current="page">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24"><path d="M6 3v3M18 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/></svg>
+          <span>Planner</span>
+        </button>
+        <button class="nav-item" type="button" data-view="recipes" aria-controls="recipes-view">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24"><path d="M6 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 0v16M9 8h7M9 12h7"/></svg>
+          <span>Recepten</span>
+        </button>
+        <button class="nav-item" type="button" data-view="shopping" aria-controls="shopping-view">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24"><path d="M4 5h2l2 10h9l2-7H7M10 20h.01M17 20h.01"/></svg>
+          <span>Boodschappen</span>
+        </button>
+        <button class="nav-item" type="button" data-view="settings" aria-controls="settings-view">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.86 2.86-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1v.1H9.5V21a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.88.34l-.06.06-2.86-2.86.06-.06A1.7 1.7 0 0 0 4 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1-.4h-.1V9.5h.1A1.7 1.7 0 0 0 4 8.4a1.7 1.7 0 0 0-.34-1.88l-.06-.06L6.46 3.6l.06.06A1.7 1.7 0 0 0 8.4 4a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1v-.1h4.1v.1A1.7 1.7 0 0 0 15 4a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.86 2.86-.06.06A1.7 1.7 0 0 0 19.4 8.4a1.7 1.7 0 0 0 .6 1 1.7 1.7 0 0 0 1 .4h.1v4.1H21a1.7 1.7 0 0 0-1.6 1.1Z"/></svg>
+          <span>Instellingen</span>
+        </button>
+      </nav>
+    </div>
+
+    <dialog id="recipe-dialog" class="recipe-dialog" aria-labelledby="recipe-dialog-title">
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">Recept</p>
+          <h2 id="recipe-dialog-title">Receptdetails</h2>
+        </div>
+        <form method="dialog">
+          <button class="dialog-close" type="submit" aria-label="Sluit recept">×</button>
+        </form>
+      </div>
+      <div id="recipe-dialog-content" class="dialog-content"></div>
+    </dialog>
+
+    <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

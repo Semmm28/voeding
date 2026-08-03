@@ -1,0 +1,54 @@
+{
+  "id": "./",
+  "name": "Voeding — maaltijdplanner",
+  "short_name": "Voeding",
+  "description": "Een lokale maaltijdplanner met recepten, voedingsdoelen en een boodschappenlijst.",
+  "lang": "nl-NL",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f7f8f3",
+  "theme_color": "#22653d",
+  "categories": ["food", "health", "lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "./assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open planner",
+      "short_name": "Planner",
+      "url": "./#planner"
+    },
+    {
+      "name": "Open boodschappenlijst",
+      "short_name": "Boodschappen",
+      "url": "./#shopping"
+    }
+  ]
+}
