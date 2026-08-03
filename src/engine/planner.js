@@ -733,13 +733,6 @@ export function adjustMeal({
   }
 
   const changed = Boolean(nextMeal);
-  const adjustmentWarning = changed ? [] : [{
-    code: 'NO_ADJUSTMENT_AVAILABLE',
-    severity: 'info',
-    day: dayIndex + 1,
-    slot: current.slot,
-    message: 'Binnen je huidige voorkeuren is voor deze actie geen betere aanpassing beschikbaar.',
-  }];
   const days = plan.days.map((day, currentDayIndex) => {
     if (currentDayIndex !== dayIndex) return day;
     return {
@@ -755,7 +748,7 @@ export function adjustMeal({
     ...plan,
     revision: finite(plan.revision, 0) + (changed ? 1 : 0),
     days,
-  }, recipeIndex, ingredientIndex, adjustmentWarning);
+  }, recipeIndex, ingredientIndex);
   updated.adjustment = { action, changed, dayIndex, mealIndex };
   return updated;
 }

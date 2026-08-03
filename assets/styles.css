@@ -546,12 +546,46 @@ h3 {
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem;
-  border-bottom: 1px solid var(--border);
   background: var(--surface-soft);
+  cursor: pointer;
+}
+
+.plan-day.is-expanded .day-header {
+  border-bottom: 1px solid var(--border);
 }
 
 .day-header h2 {
   margin: 0;
+}
+
+.day-title-block {
+  min-width: 0;
+}
+
+.day-toggle {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-weight: inherit;
+  text-align: left;
+  touch-action: manipulation;
+}
+
+.day-toggle-icon {
+  display: inline-block;
+  color: var(--primary);
+  font-size: 1.25rem;
+  line-height: 1;
+  transition: transform 150ms ease;
+}
+
+.day-toggle[aria-expanded="true"] .day-toggle-icon {
+  transform: rotate(180deg);
 }
 
 .day-date {
@@ -607,11 +641,39 @@ h3 {
   border-bottom: 0;
 }
 
+.meal-summary {
+  min-width: 0;
+}
+
+.meal-summary.is-clickable {
+  cursor: pointer;
+}
+
+.meal-summary.is-clickable:hover h3 {
+  color: var(--primary);
+}
+
 .meal-topline {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.meal-recipe-link {
+  min-height: 36px;
+  flex: 0 0 auto;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 780;
+}
+
+.meal-recipe-link:hover {
+  border-color: var(--primary);
 }
 
 .meal-type {
@@ -1249,6 +1311,9 @@ textarea[aria-invalid="true"] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+}
+
+@media (min-width: 760px) {
   .day-header {
     flex-direction: row;
     align-items: center;
@@ -1258,9 +1323,7 @@ textarea[aria-invalid="true"] {
   .macro-row {
     min-width: min(100%, 390px);
   }
-}
 
-@media (min-width: 760px) {
   .app-header {
     padding-right: max(2rem, env(safe-area-inset-right));
     padding-left: max(2rem, env(safe-area-inset-left));
@@ -1380,5 +1443,17 @@ textarea[aria-invalid="true"] {
     break-inside: avoid;
     border-color: #cccccc;
     box-shadow: none;
+  }
+
+  .meal-list[hidden] {
+    display: grid !important;
+  }
+
+  .day-toggle-icon {
+    display: none;
+  }
+
+  .day-header {
+    border-bottom: 1px solid #cccccc;
   }
 }

@@ -50,11 +50,27 @@ const CATEGORY_LABELS = {
   other: 'Overig'
 };
 
+/** Maak blijvende schemawaarschuwingen geschikt voor de UI. */
+export function planWarningViewModels(warnings = []) {
+  return warnings
+    .filter((warning) => warning.code !== 'NO_ADJUSTMENT_AVAILABLE')
+    .map((warning) => ({
+      ...warning,
+      type: warning.severity ?? warning.type ?? 'warning',
+      title: warning.severity === 'error'
+        ? 'Niet volledig haalbaar'
+        : warning.severity === 'info'
+          ? 'Informatie'
+          : 'Let op'
+    }));
+}
+
 export const UI_ACTIONS = Object.freeze({
   MORE_PROTEIN: 'more-protein',
   CHEAPER: 'cheaper',
   FASTER: 'faster',
   REPLACE_MEAL: 'replace',
+  TOGGLE_DAY: 'toggle-day',
   VIEW_RECIPE: 'view-recipe',
   TOGGLE_SHOPPING_ITEM: 'toggle-shopping-item'
 });
@@ -282,13 +298,38 @@ function createMealCard(meal, dayId, dayIndex, index) {
       'data-meal-index': index
     }
   });
-  const details = element('div');
+  const hasRecipe = recipeId !== null && recipeId !== undefined;
+  const recipeActionAttributes = hasRecipe
+    ? {
+        'data-action': UI_ACTIONS.VIEW_RECIPE,
+        'data-recipe-id': recipeId,
+        'data-day-index': dayIndex,
+        'data-meal-index': index
+      }
+    : {};
+  const details = element('div', {
+    className: hasRecipe ? 'meal-summary is-clickable' : 'meal-summary',
+    attributes: recipeActionAttributes
+  });
   const topLine = element('div', { className: 'meal-topline' });
   const titleBlock = element('div');
 
   appendTextElement(titleBlock, 'p', mealLabel(type), 'meal-type');
   appendTextElement(titleBlock, 'h3', name);
   topLine.append(titleBlock);
+
+  if (hasRecipe) {
+    topLine.append(element('button', {
+      className: 'meal-recipe-link',
+      text: 'Bekijk recept',
+      attributes: {
+        type: 'button',
+        ...recipeActionAttributes,
+        'aria-label': `Bekijk recept: ${text(name)}`
+      }
+    }));
+  }
+
   details.append(topLine, createMealMeta(meal, recipe));
 
   const actions = element('div', {
@@ -312,9 +353,12 @@ function createMealCard(meal, dayId, dayIndex, index) {
  * of `nutrition` en `meals[]` bevatten. Gebruikersdata wordt uitsluitend via
  * `textContent` en DOM-attributen geplaatst.
  */
-export function renderPlan(target, plan) {
+export function renderPlan(target, plan, options = {}) {
   const container = requireElement(target, 'Plancontainer');
   const days = Array.isArray(plan?.days) ? plan.days : [];
+  const expandedDayIds = options.expandedDayIds instanceof Set
+    ? options.expandedDayIds
+    : new Set(options.expandedDayIds ?? []);
   const fragment = document.createDocumentFragment();
 
   if (days.length === 0) {
@@ -329,22 +373,51 @@ export function renderPlan(target, plan) {
 
   days.forEach((day, dayIndex) => {
     const dayId = day.id ?? `day-${dayIndex + 1}`;
+    const normalizedDayId = text(dayId);
     const date = parseDate(day.date);
     const title = day.label ?? day.name ?? `Dag ${dayIndex + 1}`;
+    const isExpanded = expandedDayIds.has(normalizedDayId);
+    const mealListId = `plan-day-meals-${dayIndex}`;
     const dayCard = element('section', {
-      className: 'plan-day',
+      className: isExpanded ? 'plan-day is-expanded' : 'plan-day',
       attributes: {
-        'data-day-id': dayId,
+        'data-day-id': normalizedDayId,
         'data-day-index': dayIndex,
         'aria-labelledby': `plan-day-heading-${dayIndex}`
       }
     });
-    const header = element('header', { className: 'day-header' });
-    const titleBlock = element('div');
+    const header = element('header', {
+      className: 'day-header',
+      attributes: {
+        'data-action': UI_ACTIONS.TOGGLE_DAY,
+        'data-day-id': normalizedDayId
+      }
+    });
+    const titleBlock = element('div', { className: 'day-title-block' });
     const heading = element('h2', {
-      text: title,
       attributes: { id: `plan-day-heading-${dayIndex}` }
     });
+    const toggleButton = element('button', {
+      className: 'day-toggle',
+      attributes: {
+        type: 'button',
+        'data-action': UI_ACTIONS.TOGGLE_DAY,
+        'data-day-id': normalizedDayId,
+        'aria-expanded': isExpanded,
+        'aria-controls': mealListId,
+        'aria-label': `${isExpanded ? 'Klap in' : 'Klap uit'}: ${text(title)}`
+      }
+    });
+
+    toggleButton.append(
+      element('span', { text: title }),
+      element('span', {
+        className: 'day-toggle-icon',
+        text: '⌄',
+        attributes: { 'aria-hidden': 'true' }
+      })
+    );
+    heading.append(toggleButton);
 
     titleBlock.append(heading);
 
@@ -355,7 +428,11 @@ export function renderPlan(target, plan) {
     header.append(titleBlock, createMacroRow(day.totals || day.nutrition || {}));
 
     const meals = Array.isArray(day.meals) ? day.meals : [];
-    const mealList = element('div', { className: 'meal-list' });
+    const mealList = element('div', {
+      className: 'meal-list',
+      attributes: { id: mealListId }
+    });
+    mealList.hidden = !isExpanded;
 
     if (meals.length === 0) {
       mealList.append(element('p', {
@@ -373,6 +450,23 @@ export function renderPlan(target, plan) {
   });
 
   container.replaceChildren(fragment);
+}
+
+/** Werk één dagweergave bij zonder het schema opnieuw te renderen. */
+export function setPlanDayExpanded(control, expanded) {
+  const dayCard = control?.closest?.('.plan-day');
+  if (!dayCard) return false;
+
+  const toggleButton = dayCard.querySelector(`.day-toggle[data-action="${UI_ACTIONS.TOGGLE_DAY}"]`);
+  const mealList = dayCard.querySelector('.meal-list');
+  if (!toggleButton || !mealList) return false;
+
+  const isExpanded = Boolean(expanded);
+  dayCard.classList.toggle('is-expanded', isExpanded);
+  toggleButton.setAttribute('aria-expanded', text(isExpanded));
+  toggleButton.setAttribute('aria-label', `${isExpanded ? 'Klap in' : 'Klap uit'}: ${toggleButton.textContent.replace('⌄', '').trim()}`);
+  mealList.hidden = !isExpanded;
+  return true;
 }
 
 function normalizeTags(recipe) {

@@ -27,6 +27,8 @@ zijn niet bedoeld als actuele supermarktprijzen.
 - Filters voor dieet, allergenen, ongewenste ingrediënten, tijd en budget.
 - Lokale optimalisatie op doelen, variatie, bereidingstijd en kosten.
 - Acties per maaltijd: meer eiwit, goedkoper, sneller en vervangen.
+- Dagen staan standaard compact met zichtbare dagtotalen en zijn afzonderlijk uitklapbaar.
+- Een maaltijd opent met één klik direct het bijbehorende recept.
 - Duidelijke waarschuwingen wanneer filters of doelen niet haalbaar zijn.
 - Recepten zoeken en filteren, met berekende voedingswaarden.
 - Automatisch samengevoegde boodschappenlijst.

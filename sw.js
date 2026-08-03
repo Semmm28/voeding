@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'voeding-pwa-';
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `${CACHE_PREFIX}static-${CACHE_VERSION}`;
 
 const APP_SHELL = [

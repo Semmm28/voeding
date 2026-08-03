@@ -165,3 +165,34 @@ test('replace vervangt een maaltijd zonder herhaallus', () => {
   assert.notEqual(adjusted.days[0].meals[0].recipeId, plan.days[0].meals[0].recipeId);
 });
 
+test('mislukte maaltijdactie blijft tijdelijke feedback en geen schemawaarschuwing', () => {
+  const localRecipes = [
+    recipe('only-breakfast', 'breakfast', 'vegan-high-protein', {
+      prepMinutes: 5,
+      grams: 100,
+      adjustable: { min: 50, max: 100, step: 50 },
+    }),
+    recipe('only-lunch', 'lunch', 'cheap', { prepMinutes: 5 }),
+    recipe('only-dinner', 'dinner', 'vegan-base', { prepMinutes: 5 }),
+  ];
+  const plan = generateWeekPlan({ ...baseOptions, recipes: localRecipes, days: 1 });
+
+  for (const action of ['more-protein', 'faster']) {
+    const adjusted = adjustMeal({
+      plan,
+      dayIndex: 0,
+      mealIndex: 0,
+      action,
+      recipes: localRecipes,
+      ingredients,
+    });
+
+    assert.equal(adjusted.adjustment.changed, false);
+    assert.equal(adjusted.revision, plan.revision);
+    assert.deepEqual(adjusted.days[0].meals[0], plan.days[0].meals[0]);
+    assert.equal(
+      adjusted.warnings.some((warning) => warning.code === 'NO_ADJUSTMENT_AVAILABLE'),
+      false,
+    );
+  }
+});

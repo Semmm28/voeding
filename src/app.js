@@ -8,12 +8,14 @@ import { adjustMeal, generateWeekPlan } from './engine/planner.js';
 import { exportBackup, importBackup } from './storage/backup.js';
 import { openDatabase, STORE_NAMES } from './storage/db.js';
 import {
+  planWarningViewModels,
   renderPlan,
   renderPlanStatus,
   renderRecipeDetails,
   renderRecipes,
   renderShoppingList,
   renderWarnings,
+  setPlanDayExpanded,
   setActiveView,
   setConnectionStatus,
   showToast,
@@ -48,6 +50,7 @@ const state = {
   planIsStale: false,
   shoppingChecked: new Set(),
   shoppingHidden: new Set(),
+  expandedDayIds: new Set(),
   deferredInstallPrompt: null,
 };
 
@@ -118,18 +121,6 @@ function renderablePlan(plan) {
   };
 }
 
-function warningViewModels(warnings = []) {
-  return warnings.map((warning) => ({
-    ...warning,
-    type: warning.severity ?? warning.type ?? 'warning',
-    title: warning.severity === 'error'
-      ? 'Niet volledig haalbaar'
-      : warning.severity === 'info'
-        ? 'Informatie'
-        : 'Let op',
-  }));
-}
-
 function macroConsistencyWarning(settings) {
   const { kcal, protein, carbs, fat } = settings.targets;
   const macroKcal = protein * 4 + carbs * 4 + fat * 9;
@@ -156,10 +147,12 @@ function renderCurrentPlan() {
     return;
   }
 
-  renderPlan('#plan-results', renderablePlan(state.plan));
+  renderPlan('#plan-results', renderablePlan(state.plan), {
+    expandedDayIds: state.expandedDayIds,
+  });
   const extraWarning = macroConsistencyWarning(state.settings);
   renderWarnings('#plan-warnings', [
-    ...warningViewModels(state.plan.warnings),
+    ...planWarningViewModels(state.plan.warnings),
     ...(extraWarning ? [extraWarning] : []),
   ]);
   document.querySelector('#regenerate-plan').hidden = false;
@@ -410,6 +403,7 @@ async function generatePlan({ regenerate = false } = {}) {
   };
   state.planIsStale = false;
   resetShoppingState();
+  state.expandedDayIds.clear();
   await Promise.all([persistPlan(), persistShoppingState()]);
   renderCurrentPlan();
   setActiveView('planner');
@@ -426,6 +420,7 @@ async function handleMealAdjustment(button) {
   const dayIndex = Number(button.dataset.dayIndex);
   const mealIndex = Number(button.dataset.mealIndex);
   const action = button.dataset.action;
+  const restoreFocus = document.activeElement === button;
   state.plan = adjustMeal({
     plan: state.plan,
     dayIndex,
@@ -439,23 +434,48 @@ async function handleMealAdjustment(button) {
   resetShoppingState();
   await Promise.all([persistPlan(), persistShoppingState()]);
   renderCurrentPlan();
+  if (restoreFocus) {
+    const replacementButton = [...document.querySelectorAll('.meal-action')].find((candidate) => (
+      candidate.dataset.action === action
+      && Number(candidate.dataset.dayIndex) === dayIndex
+      && Number(candidate.dataset.mealIndex) === mealIndex
+    ));
+    replacementButton?.focus({ preventScroll: true });
+  }
   const changed = state.plan.adjustment?.changed;
   showToast(changed ? 'Maaltijd aangepast.' : 'Geen betere optie gevonden binnen je huidige voorkeuren.', {
     type: changed ? 'success' : 'info',
   });
 }
 
-function showRecipeDetails(recipeId) {
+function toggleDay(control) {
+  const dayId = control.dataset.dayId;
+  if (!dayId) return;
+  const expanded = !state.expandedDayIds.has(dayId);
+  if (expanded) state.expandedDayIds.add(dayId);
+  else state.expandedDayIds.delete(dayId);
+  setPlanDayExpanded(control, expanded);
+}
+
+function showRecipeDetails(recipeId, context = {}) {
   const recipe = state.recipeIndex.get(recipeId);
   if (!recipe) return;
+  const dayIndex = Number(context.dayIndex);
+  const mealIndex = Number(context.mealIndex);
+  const plannedMeal = Number.isInteger(dayIndex) && Number.isInteger(mealIndex)
+    ? state.plan?.days?.[dayIndex]?.meals?.[mealIndex]
+    : null;
+  const matchingMeal = plannedMeal?.recipeId === recipeId ? plannedMeal : null;
   const calculated = calculateRecipeNutrition(recipe, state.ingredientIndex);
   renderRecipeDetails('#recipe-dialog-content', {
     ...recipe,
-    nutrition: calculated.totals,
-    cost: calculated.cost,
+    servings: matchingMeal?.servings ?? recipe.servings,
+    nutrition: matchingMeal?.nutrition ?? calculated.totals,
+    cost: matchingMeal?.cost ?? calculated.cost,
     allergens: calculated.allergens,
     ingredients: recipe.ingredients.map((line) => ({
       ...line,
+      grams: matchingMeal?.ingredientGrams?.[line.ingredientId] ?? line.grams,
       name: state.ingredientIndex.get(line.ingredientId)?.name ?? line.ingredientId,
     })),
   });
@@ -506,6 +526,7 @@ async function clearAllData() {
   state.recipes = [...RECIPES];
   state.plan = null;
   state.planIsStale = false;
+  state.expandedDayIds.clear();
   resetShoppingState();
   rebuildIndexes();
   writeSettingsForm(state.settings);
@@ -536,6 +557,7 @@ async function loadStoredState() {
   plans.sort((left, right) => String(left.updatedAt ?? '').localeCompare(String(right.updatedAt ?? '')));
   state.plan = plans.at(-1) ?? null;
   state.planIsStale = false;
+  state.expandedDayIds.clear();
   const shopping = meta.find((record) => record.key === 'shoppingState')?.value;
   state.shoppingChecked = new Set(shopping?.checked ?? []);
   state.shoppingHidden = new Set(shopping?.hidden ?? []);
@@ -589,10 +611,15 @@ function setupEventHandlers() {
       withBusy(button, () => generatePlan());
     } else if (action === 'regenerate-plan') {
       withBusy(button, () => generatePlan({ regenerate: true }));
+    } else if (action === UI_ACTIONS.TOGGLE_DAY) {
+      toggleDay(button);
     } else if ([UI_ACTIONS.MORE_PROTEIN, UI_ACTIONS.CHEAPER, UI_ACTIONS.FASTER, UI_ACTIONS.REPLACE_MEAL].includes(action)) {
       withBusy(button, () => handleMealAdjustment(button));
     } else if (action === UI_ACTIONS.VIEW_RECIPE) {
-      showRecipeDetails(button.dataset.recipeId);
+      showRecipeDetails(button.dataset.recipeId, {
+        dayIndex: button.dataset.dayIndex,
+        mealIndex: button.dataset.mealIndex,
+      });
     } else if (action === 'clear-checked-shopping') {
       for (const id of state.shoppingChecked) state.shoppingHidden.add(id);
       state.shoppingChecked.clear();
